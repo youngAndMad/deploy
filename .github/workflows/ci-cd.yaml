@@ -1,0 +1,45 @@
+name: CI CD Workflow
+
+on:
+  workflow_call:
+    inputs:
+      java-version:
+        required: false
+        type: string
+        default: "21"
+      maven-command:
+        required: false
+        type: string
+        default: "mvn -B clean install"
+      docker-image-name:
+        required: true
+        type: string
+    secrets:
+      docker-username:
+        required: true
+      docker-password:
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v2
+
+      - name: set up JDK
+        uses: actions/setup-java@v2
+        with:
+          distribution: "adopt"
+          java-version: ${{ inputs.java-version }}
+
+      - name: Build with Maven
+        run: ${{ inputs.maven-command }}
+
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t ${{ inputs.docker-image-name }} .
+      - name: Docker login
+        run: docker login --username ${{ secrets.docker-username }} --password ${{ secrets.docker-password }}
+      - name: Docker push
+        run: docker push ${{ inputs.docker-image-name }}
